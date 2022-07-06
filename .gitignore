@@ -1,4 +1,5 @@
 *__pycache__*
 *pkl*
-*ipynb_notebooks*
+*ipynb_checkpoints*
 *egg-info*
+ENV/*
