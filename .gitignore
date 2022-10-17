@@ -12,3 +12,4 @@ resources
 connection*
 notebooks/lightning_logs/*
 *.swp
+build
