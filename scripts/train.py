@@ -2,7 +2,7 @@
 BERT embeddings + Linear
 """
 import os
-os.environ['TRANSFORMERS_OFFLINE'] = '1'
+# os.environ['TRANSFORMERS_OFFLINE'] = '1'
 
 
 import pandas as pd
@@ -29,7 +29,8 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, Stochast
 from pytorch_lightning.plugins import DDPPlugin
 
 transformers.logging.set_verbosity_error()
-TRANSFORMER_CACHE = Path("/home/amanjais/projects/def-emilios/dsci_2022/resources/transformer_cache")
+# TRANSFORMER_CACHE = Path("/home/amanjais/projects/def-emilios/dsci_2022/resources/transformer_cache")
+TRANSFORMER_CACHE = Path("resources/transformer_cache")
 
 
 
@@ -118,12 +119,19 @@ def train(data_params: dict,trainData,valData,testData,only_test_epoch=False):
     # Log other expriment details------------------------------------------------------------
 
     logger.log_hyperparams(
-        data_params
-        | {
-            "train-data-size": len(data_module.train_dataloader().dataset),
-            "val-data-size": len(data_module.val_dataloader().dataset),
-            "test-data-size": len(data_module.test_dataloader().dataset),
-        }
+        data_params.update(
+            {
+                "train-data-size": len(data_module.train_dataloader().dataset),
+                "val-data-size": len(data_module.val_dataloader().dataset),
+                "test-data-size": len(data_module.test_dataloader().dataset),
+            }
+        )
+       # data_params
+       # | {
+       #      "train-data-size": len(data_module.train_dataloader().dataset),
+       #      "val-data-size": len(data_module.val_dataloader().dataset),
+       #      "test-data-size": len(data_module.test_dataloader().dataset),
+       #  }
     )
 
     # Testing Dataloader --------------------------------------------------------------------
@@ -142,13 +150,15 @@ def train(data_params: dict,trainData,valData,testData,only_test_epoch=False):
         ],
 
         max_epochs=20,
-        checkpoint_callback=True,
+        # checkpoint_callback=True,
         auto_select_gpus=True,
-        gpus=-1,
+        # gpus=-1,
+        # accelerator = "gpu",
+        # devices = -1,
         num_nodes=1,
         #strategy= DDPPlugin(find_unused_parameters=True), #'ddp', #(multiple-gpus, 1 machine)
         # accumulate_grad_batches=16,
-        progress_bar_refresh_rate=500,
+        # progress_bar_refresh_rate=500,
         # profiler="simple",
         log_every_n_steps=5,
         num_sanity_val_steps=0,  # use this when AUROC throws error in validation
@@ -160,12 +170,12 @@ def train(data_params: dict,trainData,valData,testData,only_test_epoch=False):
         # overfit_batches=2,
         # auto_lr_find =True,
         precision=16, 
-        accelerator="gpu"
+        # accelerator="gpu"
 
     )
 
 
-    checkpoint_path = '/home/amanjais/projects/def-emilios/dsci_2022/checkpoints/Summarization/last.ckpt'
+    checkpoint_path = 'checkpoints/Summarization/last.ckpt'
 
     if only_test_epoch == False:
 
@@ -185,7 +195,7 @@ def train(data_params: dict,trainData,valData,testData,only_test_epoch=False):
     #print(f' Process_paper_level ==== {data_module.test_dataset.process_paper_level}')
     pl.Trainer(gpus=-1, logger=logger).test(
         model=classifier,
-        ckpt_path='/home/amanjais/projects/def-emilios/dsci_2022/checkpoints/Summarization/last.ckpt',
+        ckpt_path='checkpoints/Summarization/last.ckpt',
         dataloaders=data_module.test_dataloader())
 
 
