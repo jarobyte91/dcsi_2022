@@ -1,2 +1,0 @@
-#!/bin/sh
-salloc --time=3:0:0 --ntasks=1 --cpus-per-task=4 --mem=64G --account=rrg-emilios srun ~/envs/detests/bin/notebook.sh
