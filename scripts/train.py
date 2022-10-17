@@ -34,7 +34,7 @@ TRANSFORMER_CACHE = Path("resources/transformer_cache")
 
 
 
-from dsci_2022.chunksumm_vectorized import SuMM_with_tokenizer,SummDataModule,CHUNKSUMM_CONV #
+from dcsi_2022.chunksumm_vectorized import SuMM_with_tokenizer,SummDataModule,CHUNKSUMM_CONV #
 
 
 def train(data_params: dict,trainData,valData,testData,only_test_epoch=False):
