@@ -390,7 +390,8 @@ class CHUNKSUMM(pl.LightningModule):
         return out.to(self.device)
     
     
-def get_token_scores(model, tokenizer, text: List(str)):
+# def get_token_scores(model, tokenizer, text: List(str)):
+def get_token_scores(model, tokenizer, text):
     tokenized_input = tokenizer(text, return_tensors = 'pt')
     model.eval()
     return tokenized_input['input_ids'], model(**tokenized_input) # (IN,OUT) probabilities
