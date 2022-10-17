@@ -3,3 +3,11 @@
 *ipynb_checkpoints*
 *egg-info*
 ENV/*
+.vscode
+checkpoints
+mlruns
+*.out
+resources
+*.sh
+connection*
+notebooks/lightning_logs/*

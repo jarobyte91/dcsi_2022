@@ -73,37 +73,18 @@ class CHUNKSUMM_CONV(pl.LightningModule):
 
         if self.enable_chunk:
 
-            batch_chunks = [self.chunk(batch) for batch in (input_ids, attention_mask, token_type_ids)]
-            handler = []
-            for chunk in zip(batch_chunks[0], batch_chunks[1], batch_chunks[2]):
-                chunk_hidden_states = self.bert(chunk[0], chunk[1], chunk[2], output_hidden_states=True)[2]
-                chunk_embed2d = torch.stack(chunk_hidden_states)[-5:].mean(0)
-                handler.append(chunk_embed2d)
+            batch_size, n_tokens = input_ids.shape
+            n_chunks = int(max(n_tokens/512,1))
+                  
+            argument_chunks = [torch.cat(self.chunk(argument),dim=0) for argument in (input_ids, attention_mask, token_type_ids)] #n_chunks * Batch * tokens 
+            argument_chunks = [argument.reshape(n_chunks*batch_size,min(n_tokens,512)) for argument in argument_chunks]
+            
+            chunk_hidden_states = self.bert(argument_chunks[0], argument_chunks[1], argument_chunks[2], output_hidden_states=True)[2] #(n_chunks * Batch) * tokens * embed_size
+            chunk_embed2d = (chunk_hidden_states[-1]+chunk_hidden_states[-2]+chunk_hidden_states[-3]+chunk_hidden_states[-4]+chunk_hidden_states[-5])/5
 
-            contextual_encoding = torch.cat(handler, dim=1)
-            embed2d = contextual_encoding
-
-
-
-
-            # print(input_ids.shape[0])
-            # argument_chunks = [torch.cat(self.chunk(argument),dim=0) for argument in (input_ids, attention_mask, token_type_ids)]
-            # # batch_chunks = map(self.chunk, (input_ids, attention_mask, token_type_ids))
-            # print(argument_chunks[0].shape)
-            # chunk_hidden_states = self.bert(argument_chunks[0], argument_chunks[1], argument_chunks[2], output_hidden_states=True)[2]
-            # chunk_embed2d = (chunk_hidden_states[-1]+chunk_hidden_states[-2]+chunk_hidden_states[-3]+chunk_hidden_states[-4]+chunk_hidden_states[-5])/5
-            # print(chunk_embed2d.shape)
-            # chunk_embed2d = torch.cat(chunk_embed2d.split(input_ids.shape[0],dim=0),dim=1)
-            # print(chunk_embed2d.shape)
-            # exit(0)
-            # # handler = []
-            # # for chunk in zip(batch_chunks[0], batch_chunks[1], batch_chunks[2]):
-            # #     chunk_hidden_states = self.bert(chunk[0], chunk[1], chunk[2], output_hidden_states=True)[2]
-            # #     chunk_embed2d = torch.stack(chunk_hidden_states)[-5:].mean(0)
-            # #     handler.append(chunk_embed2d)
-
-            # contextual_encoding = torch.cat(handler, dim=1)
-            # embed2d = contextual_encoding
+            chunk_embed2d = chunk_embed2d.reshape(batch_size,n_tokens,-1)
+        
+            embed2d = chunk_embed2d
 
         else:
             hidden_states = self.bert(input_ids[:, :512], attention_mask[:, :512], token_type_ids[:, :512], output_hidden_states=True)[2]
@@ -409,7 +390,7 @@ class CHUNKSUMM(pl.LightningModule):
         return out.to(self.device)
     
     
-def get_token_scores(model, tokenizer, text:[str]):
+def get_token_scores(model, tokenizer, text: List(str)):
     tokenized_input = tokenizer(text, return_tensors = 'pt')
     model.eval()
     return tokenized_input['input_ids'], model(**tokenized_input) # (IN,OUT) probabilities
@@ -587,6 +568,8 @@ class SummDataModule(pl.LightningDataModule):
         """The inputs are padded to the maximum token len in a batch including rationale_mask"""
         input_ids_batch, attention_mask_batch, targets_batch = [], [], []
         maximum = max(len(item["input_ids"]) for item in batch)
+        if maximum > 512:
+            maximum  = math.ceil(maximum/512)*512 # Next Multiple of 512, This will help in putting chunks in the batch dimension.
         
         def pad(tensor, max=maximum):
             out = torch.zeros(max)
